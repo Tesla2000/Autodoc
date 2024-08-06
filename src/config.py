@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Type
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pydantic import Field
+from pydantic import SecretStr
 
 from src.custom_argument_parser import CustomArgumentParser
 
@@ -15,6 +17,9 @@ load_dotenv()
 class Config(BaseModel):
     _root: Path = Path(__file__).parent
     filenames: list[str] = Field(default_factory=list)
+    llm: str = "google/gemma-2b"
+    fine_tuned_llm: str = "documint/CodeGemma2B-fine-tuned"
+    huggingface_token: SecretStr = os.getenv("HUGGINGFACE_API_TOKEN")
 
 
 def parse_arguments(config_class: Type[Config]):

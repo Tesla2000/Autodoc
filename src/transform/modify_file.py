@@ -15,6 +15,6 @@ def modify_file(filepath: Path, config: Config) -> int:
     new_code = module.visit(transformer).code
     if new_code != code:
         filepath.write_text(new_code)
-        print(f"File {filepath} was modified")
+        print(f"File {filepath} had docstring added")
         return 1
     return 0

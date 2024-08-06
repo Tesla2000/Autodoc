@@ -10,7 +10,7 @@ from libcst import SimpleStatementLine
 from libcst import SimpleString
 
 from src.config import Config
-from src.generate_documentation import generate_documentation
+from src.document.generate_documentation import generate_documentation
 
 
 class Transformer(cst.CSTTransformer):
@@ -23,14 +23,13 @@ class Transformer(cst.CSTTransformer):
     def leave_FunctionDef(
         self, original_node: "FunctionDef", updated_node: "FunctionDef"
     ) -> "FunctionDef":
-        attrs = ["body", "body", 0, "body", 0]
-        statement_line = self._get_path_attrs(original_node, attrs)
-        if (
-            isinstance(statement_line, Expr)
-            and isinstance(docstring := statement_line.value, SimpleString)
-            and getattr(docstring, "quote", None) in ("'''", '"""')
-        ):
+        parameters = tuple(
+            param.name.value for param in original_node.params.params
+        )
+        if original_node.get_docstring():
             return updated_node
+        code = cst.Module(body=[original_node]).code
+        documentation = generate_documentation(code, parameters, self.config)
         return self._set_path_attrs(
             updated_node,
             ["body"],
@@ -39,7 +38,7 @@ class Transformer(cst.CSTTransformer):
                     body=(
                         Expr(
                             value=SimpleString(
-                                value=f'"""\n{generate_documentation()}\n"""',
+                                value=f'"""\n\t{documentation}\n\t"""',
                             )
                         ),
                     )
