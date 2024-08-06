@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import torch
+
 from src.config import Config
 
 if TYPE_CHECKING:
@@ -21,10 +23,17 @@ def get_pipeline(config: Config) -> "SummarizationPipeline":
     )
     if config.fine_tuned_llm:
         model = PeftModel.from_pretrained(
-            model, config.fine_tuned_llm, token=config.hugginhface_token
+            model, config.fine_tuned_llm, token=config.huggingface_token
         )
-    return SummarizationPipeline(
+
+    class CustomPipeline(SummarizationPipeline):
+        def invoke(self, *args, **kwargs):
+            with torch.no_grad():
+                return self()
+
+    return CustomPipeline(
         tokenizer=tokenizer,
         model=model,
-        device=0,
+        device="cuda",
+        max_new_tokens=100,
     )

@@ -18,6 +18,12 @@ def generate_documentation(
         raise
     except ValueError:
         model = get_pipeline(config)
+    result = model.invoke(
+        f"Write a short description of the function bellow.\nFunction:\n\n"
+        f"{code.strip()}\n\nThe description should be up to 2 sentences long "
+        f"with one sentence description being preferred."
+    )
+    print(result)
     summary = model.invoke(
         f"Write a short description of the function bellow.\nFunction:\n\n"
         f"{code.strip()}\n\nThe description should be up to 2 sentences long "
