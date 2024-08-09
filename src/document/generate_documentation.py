@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Sequence
 
 from langchain.chat_models import init_chat_model
@@ -18,32 +19,31 @@ def generate_documentation(
         raise
     except ValueError:
         model = get_pipeline(config)
-    result = model.invoke(
-        f"Write a short description of the function bellow.\nFunction:\n\n"
-        f"{code.strip()}\n\nThe description should be up to 2 sentences long "
-        f"with one sentence description being preferred."
-    )
-    print(result)
+    start = time.time()
     summary = model.invoke(
-        f"Write a short description of the function bellow.\nFunction:\n\n"
-        f"{code.strip()}\n\nThe description should be up to 2 sentences long "
-        f"with one sentence description being preferred."
+        _to_chat(config.summary_prompt.format(code=code.strip()))
     ).content
     return_value = model.invoke(
-        f"Given the function below write a short description of "
-        f"a return value.\nFunction:\n\n{code.strip()}\n\nThe description "
-        f"should a few words long."
-    ).content
-    return (
+        _to_chat(config.return_value_prompt.format(code=code.strip()))
+    ).content.lstrip()
+    result = (
         f"{summary}"
         + "".join(
-            f"\n\t:param {parameter}: "
+            f"\n    :param {parameter}: "
             + model.invoke(
-                f"Given the function below write a short description of "
-                f"parameter {parameter}.\nFunction:\n\n{code.strip()}\n\nThe "
-                f"description should be up to one sentence long."
-            ).content
+                _to_chat(
+                    config.parameter_prompt.format(
+                        parameter=parameter, code=code.strip()
+                    )
+                )
+            ).content.lstrip()
             for parameter in parameters
         )
-        + f"\n\t:return: {return_value}"
+        + f"\n    :return: {return_value}"
     )
+    print(time.time() - start)
+    return result
+
+
+def _to_chat(content: str) -> list[dict[str, str]]:
+    return [{"role": "user", "content": content}]

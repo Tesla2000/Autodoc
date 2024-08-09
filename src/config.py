@@ -17,9 +17,31 @@ load_dotenv()
 class Config(BaseModel):
     _root: Path = Path(__file__).parent
     filenames: list[str] = Field(default_factory=list)
-    llm: str = "google/gemma-2b"
-    fine_tuned_llm: str = "documint/CodeGemma2B-fine-tuned"
+    # llm: str = "google/gemma-2b"
+    llm: str = "google/gemma-2-2b-it"
+    # llm: str = "gpt-4o-mini"
+    # fine_tuned_llm: str = "documint/CodeGemma2B-fine-tuned"
+    fine_tuned_llm: str = ""
     huggingface_token: SecretStr = os.getenv("HUGGINGFACE_API_TOKEN")
+    max_new_tokens: int = 100
+    summary_prompt: str = (
+        "Write a short description of the function bellow.\nFunction:\n\n"
+        "{code}\n\nThe description should be up to 2 sentences long "
+        "with one sentence description being preferred."
+    )
+    return_value_prompt: str = (
+        "Given the function below write a short description of"
+        " a return value.\nFunction:\n\n{code}\n\nThe description "
+        "should a few words long. Assume that your completion starts from "
+        ":return: so don't include it."
+    )
+    parameter_prompt: str = (
+        "Given the function below write a short "
+        "description of parameter {parameter}.\nFunction:\n\n{code}\n\nThe "
+        "description should be up to one sentence long. Assume that "
+        "your completions starts from :param {parameter}: so don't "
+        "include it."
+    )
 
 
 def parse_arguments(config_class: Type[Config]):

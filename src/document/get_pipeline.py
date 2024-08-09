@@ -1,39 +1,33 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import torch
+from collections import namedtuple
 
 from src.config import Config
 
-if TYPE_CHECKING:
-    from transformers import SummarizationPipeline
 
+class PipelineWrapper:
+    def __init__(self, pipeline, config: Config):
+        self.config = config
+        self.pipeline = pipeline
 
-def get_pipeline(config: Config) -> "SummarizationPipeline":
-    from peft import PeftModel
-    from transformers import GemmaTokenizer, AutoModelForCausalLM
-    from transformers import SummarizationPipeline
-
-    tokenizer = GemmaTokenizer.from_pretrained(
-        config.llm, token=config.huggingface_token.get_secret_value()
-    )
-    model = AutoModelForCausalLM.from_pretrained(
-        config.llm, token=config.huggingface_token
-    )
-    if config.fine_tuned_llm:
-        model = PeftModel.from_pretrained(
-            model, config.fine_tuned_llm, token=config.huggingface_token
+    def invoke(self, messages):
+        return namedtuple("result", ["content"])(
+            self.pipeline(messages, max_new_tokens=self.config.max_new_tokens)[
+                0
+            ]["generated_text"][-1]["content"].strip()
         )
 
-    class CustomPipeline(SummarizationPipeline):
-        def invoke(self, *args, **kwargs):
-            with torch.no_grad():
-                return self()
 
-    return CustomPipeline(
-        tokenizer=tokenizer,
-        model=model,
-        device="cuda",
-        max_new_tokens=100,
+def get_pipeline(config: Config) -> PipelineWrapper:
+    import torch
+    from transformers import pipeline
+
+    return PipelineWrapper(
+        pipeline(
+            "text-generation",
+            model=config.llm,
+            model_kwargs={"torch_dtype": torch.bfloat16},
+            device="cuda",
+        ),
+        config,
     )

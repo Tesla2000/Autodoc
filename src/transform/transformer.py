@@ -11,6 +11,7 @@ from libcst import SimpleString
 
 from src.config import Config
 from src.document.generate_documentation import generate_documentation
+from src.document.split_lines import split_lines
 
 
 class Transformer(cst.CSTTransformer):
@@ -30,6 +31,7 @@ class Transformer(cst.CSTTransformer):
             return updated_node
         code = cst.Module(body=[original_node]).code
         documentation = generate_documentation(code, parameters, self.config)
+        documentation = split_lines(documentation)
         return self._set_path_attrs(
             updated_node,
             ["body"],
@@ -38,7 +40,7 @@ class Transformer(cst.CSTTransformer):
                     body=(
                         Expr(
                             value=SimpleString(
-                                value=f'"""\n\t{documentation}\n\t"""',
+                                value=f'"""\n{documentation}    """',
                             )
                         ),
                     )
