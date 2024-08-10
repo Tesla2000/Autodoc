@@ -10,9 +10,9 @@ from src.config import Config
 from src.document.get_pipeline import get_pipeline
 
 
-def generate_documentation(
+def generate_descriptions(
     code: str, parameters: Sequence[str], config: Config
-) -> str:
+) -> tuple[str, tuple[str, ...], str]:
     try:
         model = init_chat_model(config.llm, temperature=0.2)
     except ValidationError:
@@ -26,11 +26,20 @@ def generate_documentation(
     return_value = model.invoke(
         _to_chat(config.return_value_prompt.format(code=code.strip()))
     ).content.lstrip()
-    result = (
-        f"{summary}"
-        + "".join(
-            f"\n    :param {parameter}: "
-            + model.invoke(
+    # result = (
+    #     f"{summary}"
+    #     + "".join(
+    #         f"\n    :param {parameter}: "
+    #         +
+    #     )
+    #     + f"\n    :return: {return_value}"
+    # )
+
+    print(time.time() - start)
+    return (
+        summary,
+        tuple(
+            model.invoke(
                 _to_chat(
                     config.parameter_prompt.format(
                         parameter=parameter, code=code.strip()
@@ -38,11 +47,9 @@ def generate_documentation(
                 )
             ).content.lstrip()
             for parameter in parameters
-        )
-        + f"\n    :return: {return_value}"
+        ),
+        return_value,
     )
-    print(time.time() - start)
-    return result
 
 
 def _to_chat(content: str) -> list[dict[str, str]]:

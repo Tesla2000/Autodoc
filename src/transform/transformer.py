@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import traceback
+from functools import partial
 from typing import Sequence
 
 import libcst as cst
@@ -10,7 +12,8 @@ from libcst import SimpleStatementLine
 from libcst import SimpleString
 
 from src.config import Config
-from src.document.generate_documentation import generate_documentation
+from src.document.conv2docstring_lines import conv2docstring_lines
+from src.document.generate_descriptions import generate_descriptions
 from src.document.split_lines import split_lines
 
 
@@ -24,14 +27,49 @@ class Transformer(cst.CSTTransformer):
     def leave_FunctionDef(
         self, original_node: "FunctionDef", updated_node: "FunctionDef"
     ) -> "FunctionDef":
-        parameters = tuple(
+        expected_parameters = tuple(
             param.name.value for param in original_node.params.params
         )
-        if original_node.get_docstring():
+        tab = self.config.tab_length * " "
+        if doc := original_node.get_docstring():
+            actual_parameters = dict(
+                (
+                    (partition := param.partition(":"))[0],
+                    f"{tab}:param {partition[0]}:{partition[2]}",
+                )
+                for param in doc.rpartition(":return:")[0].split(":param ")[1:]
+            )
+        else:
+            actual_parameters = {}
+        missing_parameters = tuple(
+            set(expected_parameters) - set(actual_parameters.keys())
+        )
+        if not missing_parameters:
             return updated_node
         code = cst.Module(body=[original_node]).code
-        documentation = generate_documentation(code, parameters, self.config)
-        documentation = split_lines(documentation)
+        summary, parameters, result = generate_descriptions(
+            code, missing_parameters, self.config
+        )
+        parameters, result = conv2docstring_lines(
+            parameters, result, missing_parameters
+        )
+        line_splitter = partial(
+            split_lines,
+            line_length=self.config.line_length,
+            tab_length=self.config.tab_length,
+        )
+        summary, parameters, result = (
+            line_splitter(summary),
+            tuple(map(line_splitter, parameters)),
+            line_splitter(result),
+        )
+        parameters = dict(zip(missing_parameters, parameters))
+        parameters.update(actual_parameters)
+        result_doc = '"""{}{}{}"""'.format(
+            "\n" + summary,
+            "".join(map(parameters.get, expected_parameters)),
+            result + tab,
+        )
         return self._set_path_attrs(
             updated_node,
             ["body"],
@@ -40,12 +78,14 @@ class Transformer(cst.CSTTransformer):
                     body=(
                         Expr(
                             value=SimpleString(
-                                value=f'"""\n{documentation}    """',
+                                value=result_doc,
                             )
                         ),
                     )
                 ),
-                *self._get_path_attrs(updated_node, ["body", "body"]),
+                *self._get_path_attrs(updated_node, ["body", "body"])[
+                    bool(doc) :
+                ],
             ),
         )
 
@@ -70,7 +110,14 @@ class Transformer(cst.CSTTransformer):
         inner_element = inner_element.with_changes(**kwargs)
         for i in range(1, len(attrs) + 1):
             outer_element = self._get_path_attrs(elem, attrs[:-i])
-            inner_element = outer_element.with_changes(
-                **{attrs[-i]: inner_element}
-            )
+            key = attrs[-i]
+            if isinstance(key, int):
+                inner_element = outer_element[attrs[-i]]
+            else:
+                try:
+                    inner_element = outer_element.with_changes(
+                        **{attrs[-i]: inner_element}
+                    )
+                except TypeError:
+                    traceback.format_exc()
         return inner_element
