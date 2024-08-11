@@ -44,6 +44,7 @@ class Config(BaseModel):
         "your completions starts from :param {parameter}: so don't "
         "include it."
     )
+    update_overwrite: bool = True
 
 
 def parse_arguments(config_class: Type[Config]):
