@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from typing import Sequence
 
 from langchain.chat_models import init_chat_model
@@ -13,29 +12,14 @@ from src.document.get_pipeline import get_pipeline
 def generate_descriptions(
     code: str, parameters: Sequence[str], config: Config
 ) -> tuple[str, tuple[str, ...], str]:
-    try:
-        model = init_chat_model(config.llm, temperature=0.2)
-    except ValidationError:
-        raise
-    except ValueError:
-        model = get_pipeline(config)
-    start = time.time()
+    model = get_model(config)
     summary = model.invoke(
         _to_chat(config.summary_prompt.format(code=code.strip()))
     ).content
     return_value = model.invoke(
         _to_chat(config.return_value_prompt.format(code=code.strip()))
     ).content.lstrip()
-    # result = (
-    #     f"{summary}"
-    #     + "".join(
-    #         f"\n    :param {parameter}: "
-    #         +
-    #     )
-    #     + f"\n    :return: {return_value}"
-    # )
 
-    print(time.time() - start)
     return (
         summary,
         tuple(
@@ -54,3 +38,12 @@ def generate_descriptions(
 
 def _to_chat(content: str) -> list[dict[str, str]]:
     return [{"role": "user", "content": content}]
+
+
+def get_model(config: Config):
+    try:
+        return init_chat_model(config.llm, temperature=0.2)
+    except ValidationError:
+        raise
+    except ValueError:
+        return get_pipeline(config)

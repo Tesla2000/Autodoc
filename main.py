@@ -12,12 +12,11 @@ def main():
     args = parse_arguments(Config)
     config = create_config_with_args(Config, args)
     retv = 0
-    for filename in map(Path, config.filenames):
+    for filename in map(Path, config.code):
         retv |= modify_file(
-            filename,
+            config.code,
             config=config,
         )
-    return retv
 
 
 if __name__ == "__main__":

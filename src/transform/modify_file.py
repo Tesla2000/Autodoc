@@ -1,20 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import libcst as cst
 
 from src.config import Config
 from src.transform.transformer import Transformer
 
 
-def modify_file(filepath: Path, config: Config) -> int:
-    code = filepath.read_text()
+def modify_file(code: str, config: Config) -> str:
     module = cst.parse_module(code)
     transformer = Transformer(module, config)
-    new_code = module.visit(transformer).code
-    if new_code != code:
-        filepath.write_text(new_code)
-        print(f"File {filepath} had docstring added")
-        return 1
-    return 0
+    return module.visit(transformer).code

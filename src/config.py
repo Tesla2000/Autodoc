@@ -6,7 +6,6 @@ from typing import Type
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from pydantic import Field
 from pydantic import SecretStr
 
 from src.custom_argument_parser import CustomArgumentParser
@@ -16,7 +15,7 @@ load_dotenv()
 
 class Config(BaseModel):
     _root: Path = Path(__file__).parent
-    filenames: list[str] = Field(default_factory=list)
+    code: str
     tab_length: int = 4
     line_length: int = 79
     # llm: str = "google/gemma-2b"
