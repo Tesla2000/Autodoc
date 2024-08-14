@@ -22,12 +22,17 @@ def get_pipeline(config: Config) -> PipelineWrapper:
     import torch
     from transformers import pipeline
 
+    cuda = torch.cuda.is_available()
+    if cuda:
+        print("Cuda is available")
+    else:
+        print("Cuda is not available")
     return PipelineWrapper(
         pipeline(
             "text-generation",
             model=config.llm,
             model_kwargs={"torch_dtype": torch.bfloat16},
-            device="cuda",
+            device="cuda" if cuda else "cpu",
         ),
         config,
     )

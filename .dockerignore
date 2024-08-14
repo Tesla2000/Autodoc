@@ -9,3 +9,8 @@
 /Makefile
 /LICENSE
 /.pre-commit-config.yaml
+/.tests
+/_add_markdowns.py
+/docs
+/.github
+/.project_doc_record

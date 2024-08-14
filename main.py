@@ -1,22 +1,27 @@
 from __future__ import annotations
 
-from pathlib import Path
+import traceback
 
 from src.config import Config
 from src.config import create_config_with_args
 from src.config import parse_arguments
-from src.transform.modify_file import modify_file
+from src.transform.modify_code import modify_code
 
 
 def main():
     args = parse_arguments(Config)
     config = create_config_with_args(Config, args)
-    retv = 0
-    for filename in map(Path, config.code):
-        retv |= modify_file(
-            config.code,
-            config=config,
+    try:
+        print(
+            modify_code(
+                config.code,
+                config=config,
+            )
         )
+    except Exception as e:
+        print("Error: " + str(e))
+        print("Traceback: " + traceback.format_exc())
+        return 1
 
 
 if __name__ == "__main__":
