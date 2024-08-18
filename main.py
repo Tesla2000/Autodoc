@@ -8,7 +8,7 @@ from src.config import parse_arguments
 from src.transform.modify_code import modify_code
 
 
-def main():
+def main() -> int:
     args = parse_arguments(Config)
     config = create_config_with_args(Config, args)
     try:
@@ -18,6 +18,7 @@ def main():
                 config=config,
             )
         )
+        return 0
     except Exception as e:
         print("Error: " + str(e))
         print("Traceback: " + traceback.format_exc())

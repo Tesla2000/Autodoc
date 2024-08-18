@@ -18,12 +18,10 @@ class Config(BaseModel):
     code: str
     tab_length: int = 4
     line_length: int = 79
-    # llm: str = "google/gemma-2b"
-    llm: str = "google/gemma-2-2b-it"
-    # llm: str = "gpt-4o-mini"
-    # fine_tuned_llm: str = "documint/CodeGemma2B-fine-tuned"
+    hf_home: Path = Path("models")
+    llm: str = "gpt-4o-mini"
     fine_tuned_llm: str = ""
-    huggingface_token: SecretStr = os.getenv("HUGGINGFACE_API_TOKEN")
+    huggingface_token: SecretStr = os.getenv("HUGGINGFACE_API_TOKEN") or ""
     max_new_tokens: int = 100
     summary_prompt: str = (
         "Write a short description of the function bellow.\nFunction:\n\n"

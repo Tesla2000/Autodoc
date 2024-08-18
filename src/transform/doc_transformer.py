@@ -37,7 +37,7 @@ class DocTransformer(Transformer):
 
     def visit_IndentedBlock_body(self, node: "IndentedBlock") -> None:
         for child in node.body:
-            if not isinstance(child, IndentedBlock | ClassDef | FunctionDef):
+            if not isinstance(child, (IndentedBlock, ClassDef, FunctionDef)):
                 continue
             self.indentation_levels[child] = self.indentation_levels[node] + 1
         super().visit_IndentedBlock_body(node)

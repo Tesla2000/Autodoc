@@ -47,7 +47,7 @@ class DocstringGenerator:
         self.missing_parameters = tuple(
             self.expected_parameters - set(self.actual_parameters.keys())
         )
-        if not self.missing_parameters:
+        if not self.missing_parameters and self.doc:
             return False
         return True
 

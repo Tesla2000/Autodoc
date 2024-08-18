@@ -4,6 +4,8 @@ from collections import namedtuple
 
 from src.config import Config
 
+wrapped_pipeline = None
+
 
 class PipelineWrapper:
     def __init__(self, pipeline, config: Config):
@@ -19,20 +21,35 @@ class PipelineWrapper:
 
 
 def get_pipeline(config: Config) -> PipelineWrapper:
+    global wrapped_pipeline
     import torch
-    from transformers import pipeline
+    from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 
+    if wrapped_pipeline:
+        return wrapped_pipeline
     cuda = torch.cuda.is_available()
-    if cuda:
-        print("Cuda is available")
-    else:
-        print("Cuda is not available")
-    return PipelineWrapper(
+    if not cuda:
+        print("No cuda, are you for real?")
+    tokenizer = AutoTokenizer.from_pretrained(
+        config.llm,
+        cache_dir=config.hf_home,
+        token=config.huggingface_token.get_secret_value(),
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        config.llm,
+        torch_dtype=torch.bfloat16,
+        cache_dir=config.hf_home,
+        token=config.huggingface_token.get_secret_value(),
+    )
+
+    device = 0 if cuda else -1
+    wrapped_pipeline = PipelineWrapper(
         pipeline(
             "text-generation",
-            model=config.llm,
-            model_kwargs={"torch_dtype": torch.bfloat16},
-            device="cuda" if cuda else "cpu",
+            model=model,
+            tokenizer=tokenizer,
+            device=device,
         ),
         config,
     )
+    return wrapped_pipeline
